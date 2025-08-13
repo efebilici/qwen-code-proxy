@@ -14,7 +14,7 @@ Wrap Gemini CLI as an OpenAI-compatible API service, allowing you to enjoy the f
 - 🚀 **Quick Setup**: Zero-config run with `uvx`
 - ⚡ **High Performance**: Built on FastAPI + asyncio with concurrent request support
 
-If you want to know the principle of this tool, you can read [my blog post](https://www.nettee.cn/blog/gemini-cli-proxy) (in Chinese).
+If you want to know the principle of this tool, you can read [my blog post](https://www.nettee.io/blog/gemini-cli-proxy) (in Chinese).
 
 ## 🚀 Quick Start
 
