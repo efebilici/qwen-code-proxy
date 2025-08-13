@@ -13,7 +13,7 @@
 - 🚀 **快速安装**：通过 `uvx` 零配置运行
 - ⚡ **高性能**：基于 FastAPI + asyncio，支持并发请求
 
-如果你想知道这个工具的原理，可以阅读[我的博客文章](https://www.nettee.cn/blog/gemini-cli-proxy)。
+如果你想知道这个工具的原理，可以阅读[我的博客文章](https://www.nettee.io/blog/gemini-cli-proxy)。
 
 ## 🚀 快速开始
 
