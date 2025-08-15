@@ -3,7 +3,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Wrap Qwen Code as an OpenAI-compatible API service, allowing you to enjoy the free Qwen Code model through API!
+Wrap Qwen Code as an OpenAI-compatible API service, allowing you to enjoy the **free Qwen3 Coder** model through API!
 
 - ✅ **2,000 requests/day**
 - ✅ **60 requests/minute** rate limit
