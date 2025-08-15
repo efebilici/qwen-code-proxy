@@ -95,7 +95,7 @@ print(response.choices[0].message.content)
 
 Add Model Provider in Kilo Code settings:
 - API Provider: OpenAI Compatible
-- API Host: `http://localhost:8765`
+- API Host: `http://localhost:8765/v1`
 - API Key: Any string works
 - Model Name: `qwen3-coder-plus`
 - Uncheck the "Enable Streaming"
