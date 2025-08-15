@@ -27,14 +27,14 @@ from .models import (
     ModelsResponse,
     ModelInfo
 )
-from .openai_adapter import openai_adapter
+from .qwen_client import QwenClient
 
 # Configure logging (will be updated when config is set)
 logging.basicConfig(
     level=logging.INFO,  # Default level, will be updated in CLI
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger('gemini_cli_proxy')
+logger = logging.getLogger('qwen_code_proxy')
 
 # Create rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -44,19 +44,20 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     """Application lifecycle management"""
     # Ensure logging level is applied after uvicorn starts
-    logging.getLogger('gemini_cli_proxy').setLevel(getattr(logging, config.log_level.upper()))
+    import logging
+    logging.getLogger('qwen_code_proxy').setLevel(getattr(logging, config.log_level.upper()))
     
-    logger.info(f"Starting Gemini CLI Proxy v{__version__}")
+    logger.info(f"Starting Qwen Code Proxy v{__version__}")
     logger.info(f"Configuration: port={config.port}, rate_limit={config.rate_limit}/min, concurrency={config.max_concurrency}")
     logger.debug(f"Debug logging is enabled (log_level={config.log_level})")
     yield
-    logger.info("Shutting down Gemini CLI Proxy")
+    logger.info("Shutting down Qwen Code Proxy")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="Gemini CLI Proxy",
-    description="OpenAI-compatible API wrapper for Gemini CLI",
+    title="Qwen Code Proxy",
+    description="OpenAI-compatible API wrapper for Qwen",
     version=__version__,
     lifespan=lifespan
 )
@@ -111,7 +112,7 @@ async def list_models():
     return ModelsResponse(data=models)
 
 
-@app.post("/v1/chat/completions")
+@app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 @limiter.limit(f"{config.rate_limit}/minute")
 async def chat_completions(
     chat_request: ChatCompletionRequest,
@@ -138,42 +139,20 @@ async def chat_completions(
                 ).model_dump()
             )
         
-        # Handle streaming request
-        if chat_request.stream:
-            return await openai_adapter.chat_completion_stream(chat_request)
+        qwen_client = QwenClient(model=chat_request.model)
         
         # Handle non-streaming request
-        response = await openai_adapter.chat_completion(chat_request)
-        return response
+        response_data = qwen_client.make_request(chat_request.model_dump(exclude={'model'}))
         
+        # This is a simplified adapter logic. A more robust solution would
+        # map the full Qwen response to the OpenAI format.
+        return ChatCompletionResponse.model_validate(response_data)
+
     except HTTPException:
         raise
-    except asyncio.TimeoutError:
-        logger.error("Gemini CLI command execution timeout")
-        raise HTTPException(
-            status_code=502,
-            detail=ErrorResponse(
-                error=ErrorDetail(
-                    message="Gemini CLI command execution timeout",
-                    type="bad_gateway",
-                    code="502"
-                )
-            ).model_dump()
-        )
-    except RuntimeError as e:
-        logger.error(f"Gemini CLI execution error: {e}")
-        raise HTTPException(
-            status_code=502,
-            detail=ErrorResponse(
-                error=ErrorDetail(
-                    message=str(e),
-                    type="bad_gateway",
-                    code="502"
-                )
-            ).model_dump()
-        )
     except Exception as e:
         logger.error(f"Error processing chat completion request: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=ErrorResponse(

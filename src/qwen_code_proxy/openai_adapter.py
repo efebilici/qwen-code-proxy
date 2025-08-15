@@ -18,15 +18,20 @@ from .models import (
     ChatCompletionStreamChoice,
     ChatMessage
 )
-from .gemini_client import gemini_client
+from .qwen_client import QwenClient
 
-logger = logging.getLogger('gemini_cli_proxy')
+logger = logging.getLogger(__name__)
+
+# Initialize QwenClient
+qwen_client = QwenClient()
 
 
 class OpenAIAdapter:
     """OpenAI format adapter"""
-    
-    async def chat_completion(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
+
+    async def chat_completion(
+        self, request: ChatCompletionRequest
+    ) -> ChatCompletionResponse:
         """
         Handle chat completion request (non-streaming)
         
@@ -36,40 +41,52 @@ class OpenAIAdapter:
         Returns:
             OpenAI format chat completion response
         """
-        logger.info(f"Processing chat completion request, model: {request.model}, messages: {len(request.messages)}")
-        
+        logger.info(
+            "Processing chat completion request, model: %s, messages: %d",
+            request.model,
+            len(request.messages),
+        )
+
         try:
-            # Call Gemini CLI
-            response_text = await gemini_client.chat_completion(
-                messages=request.messages,
-                model=request.model,
-                temperature=request.temperature,
-                max_tokens=request.max_tokens
-            )
-            
+            # Prepare request data for Qwen API
+            request_data = {
+                "messages": [msg.dict() for msg in request.messages],
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+                "stream": False,
+            }
+
+            # Call QwenClient to make the request
+            response_data = await qwen_client.make_request(request_data)
+
+            # Extract the response text
+            response_text = response_data["choices"][0]["message"]["content"]
+
             # Build OpenAI format response
             response = ChatCompletionResponse(
                 model=request.model,
                 choices=[
                     ChatCompletionChoice(
                         index=0,
-                        message=ChatMessage(
-                            role="assistant",
-                            content=response_text
-                        ),
-                        finish_reason="stop"
+                        message=ChatMessage(role="assistant", content=response_text),
+                        finish_reason="stop",
                     )
-                ]
+                ],
             )
-            
-            logger.info(f"Chat completion request processed successfully, response length: {len(response_text)}")
+
+            logger.info(
+                "Chat completion request processed successfully, response length: %d",
+                len(response_text),
+            )
             return response
-            
+
         except Exception as e:
             logger.error(f"Error processing chat completion request: {e}")
             raise
-    
-    async def chat_completion_stream(self, request: ChatCompletionRequest) -> StreamingResponse:
+
+    async def chat_completion_stream(
+        self, request: ChatCompletionRequest
+    ) -> StreamingResponse:
         """
         Handle streaming chat completion request
         
@@ -79,22 +96,29 @@ class OpenAIAdapter:
         Returns:
             Streaming response
         """
-        logger.info(f"Processing streaming chat completion request, model: {request.model}, messages: {len(request.messages)}")
-        
-        async def generate_stream():
+        logger.info(
+            "Processing streaming chat completion request, model: %s, messages: %d",
+            request.model,
+            len(request.messages),
+        )
+
+        async def generate_stream() -> AsyncGenerator[str, None]:
             """Generate streaming response data"""
             completion_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
             created_time = int(time.time())
-            
+
             try:
+                # Prepare request data for Qwen API
+                request_data = {
+                    "messages": [msg.dict() for msg in request.messages],
+                    "temperature": request.temperature,
+                    "max_tokens": request.max_tokens,
+                    "stream": True,
+                }
+
                 # Get streaming data generator
-                stream_generator = gemini_client.chat_completion_stream(
-                    messages=request.messages,
-                    model=request.model,
-                    temperature=request.temperature,
-                    max_tokens=request.max_tokens
-                )
-                
+                stream_generator = await qwen_client.make_request(request_data)
+
                 # Send data chunks one by one
                 async for chunk in stream_generator:
                     stream_response = ChatCompletionStreamResponse(
@@ -105,14 +129,12 @@ class OpenAIAdapter:
                             ChatCompletionStreamChoice(
                                 index=0,
                                 delta={"content": chunk},
-                                finish_reason=None
+                                finish_reason=None,
                             )
-                        ]
+                        ],
                     )
-                    
-                    # Send data chunk
                     yield f"data: {stream_response.model_dump_json()}\n\n"
-                
+
                 # Send end marker
                 final_response = ChatCompletionStreamResponse(
                     id=completion_id,
@@ -120,38 +142,33 @@ class OpenAIAdapter:
                     model=request.model,
                     choices=[
                         ChatCompletionStreamChoice(
-                            index=0,
-                            delta={},
-                            finish_reason="stop"
+                            index=0, delta={}, finish_reason="stop"
                         )
-                    ]
+                    ],
                 )
                 yield f"data: {final_response.model_dump_json()}\n\n"
                 yield "data: [DONE]\n\n"
-                
+
                 logger.info("Streaming chat completion request processed successfully")
-                
+
             except Exception as e:
                 logger.error(f"Error processing streaming chat completion request: {e}")
                 # Send error information
                 error_response = {
-                    "error": {
-                        "message": str(e),
-                        "type": "internal_error"
-                    }
+                    "error": {"message": str(e), "type": "internal_error"}
                 }
                 yield f"data: {error_response}\n\n"
                 yield "data: [DONE]\n\n"
-        
+
         return StreamingResponse(
             generate_stream(),
-            media_type="text/plain",
+            media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "*",
-            }
+            },
         )
 
 

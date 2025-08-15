@@ -36,7 +36,7 @@ import uvicorn
     "--timeout",
     default=30.0,
     type=float,
-    help="Gemini CLI command timeout in seconds"
+    help="Qwen CLI command timeout in seconds"
 )
 @click.option(
     "--debug",
@@ -51,14 +51,14 @@ def main(
     timeout: float,
     debug: bool
 ):
-    """Start Gemini CLI Proxy server"""
+    """Start Qwen Code Proxy server"""
     
     # Set configuration
     import os
     from .config import config
     
     # Set environment variable for reload mode
-    os.environ['GEMINI_CLI_PROXY_DEBUG'] = str(debug)
+    os.environ['QWEN_CODE_PROXY_DEBUG'] = str(debug)
     
     config.host = host
     config.port = port
@@ -72,12 +72,12 @@ def main(
     import logging
     # Set root logger level
     logging.getLogger().setLevel(getattr(logging, config.log_level.upper()))
-    # Also set level for all gemini_cli_proxy loggers
-    logging.getLogger('gemini_cli_proxy').setLevel(getattr(logging, config.log_level.upper()))
+    # Also set level for all qwen_code_proxy loggers
+    logging.getLogger('qwen_code_proxy').setLevel(getattr(logging, config.log_level.upper()))
     
     # Start server
     uvicorn.run(
-        "gemini_cli_proxy.server:app",
+        "qwen_code_proxy.server:app",
         host=host,
         port=port,
         log_level=config.log_level,

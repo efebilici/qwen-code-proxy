@@ -1,3 +1,19 @@
+Metadata-Version: 2.4
+Name: qwen-code-proxy
+Version: 1.0.0
+Summary: OpenAI-compatible API wrapper for Qwen Code
+Author: nettee
+License: MIT
+License-File: LICENSE
+Keywords: api,cli,qwen,openai,proxy
+Requires-Python: >=3.8
+Requires-Dist: click<9.0,>=8.0.0
+Requires-Dist: fastapi<1.0,>=0.104.0
+Requires-Dist: pydantic<3.0,>=2.0.0
+Requires-Dist: slowapi<1.0,>=0.1.9
+Requires-Dist: uvicorn[standard]<1.0,>=0.24.0
+Description-Content-Type: text/markdown
+
 # Qwen Code Proxy
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)

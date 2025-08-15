@@ -51,7 +51,6 @@ class ChatCompletionResponse(BaseModel):
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
     choices: List[ChatCompletionChoice]
-    # Note: According to design document, usage field is omitted since gemini CLI doesn't provide token usage info
 
 
 class ChatCompletionStreamChoice(BaseModel):
@@ -88,7 +87,7 @@ class ModelInfo(BaseModel):
     id: str
     object: str = "model"
     created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = "gemini-cli-proxy"
+    owned_by: str = "qwen-code-proxy"
 
 
 class ModelsResponse(BaseModel):

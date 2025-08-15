@@ -196,5 +196,5 @@ cython_debug/
 /local-docs/
 /local-scripts/
 
-# Temporary image files for Gemini CLI
-.gemini-cli-proxy/
+# Temporary image files for Qwen Code Proxy
+.qwen-code-proxy/
